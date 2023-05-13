@@ -1,12 +1,14 @@
+{{- if .Values.pvc.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Values.pvcName }}
+  name: {{ .Values.volume.pgdata.claimName }}
 spec:
-  storageClassName: {{ .Values.pvcClassName }}
+  storageClassName: {{ .Values.pvc.storageClassName }}
   resources:
     requests:
-      storage: {{ .Values.pvcSize }}
+      storage: {{ .Values.volume.pgdata.size }}
   volumeMode: Filesystem
   accessModes:
     - ReadWriteMany
+{{- end }}

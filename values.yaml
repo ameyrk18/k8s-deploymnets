@@ -1,0 +1,7 @@
+# If set to `pvc` is to `true` then pvc logic will be applied else volumes are mounted hostpath (default setting)
+pvc:
+  enabled: false
+  storageClassName: my-local-storage
+# If set to `vault` is to `true` then secrets will be rendered from vault else from plain text
+vault:
+  enabled : false

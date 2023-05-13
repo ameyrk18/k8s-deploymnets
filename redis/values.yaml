@@ -1,14 +1,14 @@
-# Default values for postgres.
+# Default values for redis.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
 
 image:
-  repository: postgres
+  repository: redis
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "15.2"
+  tag: "7.0.11"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -26,25 +26,24 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext: {}
-  #fsGroup: 1000
+  # fsGroup: 2000
 
 securityContext: {}
   # capabilities:
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
-  #runAsNonRoot: true
-  #runAsUser: 1000
+  # runAsNonRoot: true
+  # runAsUser: 1000
 
 service:
   type: ClusterIP
-  port: 5432
+  port: 6379
 
 ingress:
   enabled: false
   className: ""
-  annotations:
-    {}
+  annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
@@ -62,12 +61,12 @@ resources:
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  limits:
-    cpu: 100m
-    memory: 128Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
+   limits:
+     cpu: 100m
+     memory: 128Mi
+   requests:
+     cpu: 100m
+     memory: 128Mi
 
 autoscaling:
   enabled: true
@@ -80,24 +79,28 @@ nodeSelector: {}
 
 tolerations: []
 
-affinity: {}
-
-pvcName: postgres-pvc
-pvcClassName: my-local-storage
-pvcSize: 5Gi
+affinity: 
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: in-memory-database
+          operator: In
+          values:
+          - cache
 
 pvc:
   enabled: false
   storageClassName: my-local-storage
 
 volume:
-  pgdata:
-    volumeName: pgdata
+  redis:
+    volumeName: redis
     volumePath: /volumes
     volumeType: DirectoryOrCreate
-    mountPath: /var/lib/postgressql/data
-    claimName: pgdata
+    mountPath: /data
+    claimName: redis
     size: 5Gi
-
+  
 vault:
   enabled : false

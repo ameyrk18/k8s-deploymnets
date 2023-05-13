@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "postgres.fullname" . }}
+  name: {{ include "redis.fullname" . }}
   labels:
-    {{- include "postgres.labels" . | nindent 4 }}
+    {{- include "redis.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "postgres.selectorLabels" . | nindent 6 }}
+      {{- include "redis.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "postgres.selectorLabels" . | nindent 8 }}
+        {{- include "redis.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "postgres.serviceAccountName" . }}
+      serviceAccountName: {{ include "redis.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -33,56 +33,63 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+          - "redis-server"
+          - "--requirepass"
+          - "${REDIS_PASSWORD}"
+          env:
+            {{- if .Values.vault.enabled }}
+            - name: REDISCLI_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: dbpass
+                  key: REDISCLI_AUTH
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dbpass
+                  key: REDIS_PASSWORD
+            {{- else }}
+            - name: REDISCLI_AUTH
+              value: redis
+            - name: REDIS_PASSWORD
+              value: redis
+            {{- end }}
           volumeMounts:
-            - name: {{ .Values.volume.pgdata.claimName }}
-              mountPath: {{ .Values.volume.pgdata.mountPath }}
+            - name: {{ .Values.volume.redis.claimName }}
+              mountPath: {{ .Values.volume.redis.mountPath }}
           {{- if .Values.vault.enabled }}
             - name: secrets-store-inline
               mountPath: "/mnt/secrets-store"
               readOnly: true
           {{- end }}
-          env:
-            - name: POSTGRES_USER
-              value: "postgres"
-            {{- if .Values.vault.enabled }}
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: dbpass
-                  key: POSTGRES_PASSWORD
-            {{- else }}
-            - name: POSTGRES_PASSWORD
-              value: "postgres"
-            {{- end }}
-            - name: PGDATA
-              value: {{ .Values.volume.pgdata.mountPath }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           readinessProbe:
             exec:
-              command: [ "pg_isready", "-U", "postgres", "-h", "127.0.0.1", "-p", "5432"]
+              command: [ "redis-cli", "ping"]
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             exec:
-              command: [ "pg_isready", "-U", "postgres", "-h", "127.0.0.1", "-p", "5432"]
+              command: [ "redis-cli", "ping"]
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- if .Values.pvc.enabled }}
       volumes:
-        - name: {{ .Values.volume.pgdata.volumeName}}
+        - name: {{ .Values.volume.redis.volumeName}}
           persistentVolumeClaim:
-            claimName: {{ .Values.volume.pgdata.claimName }}
+            claimName: {{ .Values.volume.redis.claimName }}
       {{- else }}
       volumes:
-        - name: {{ .Values.volume.pgdata.volumeName}}
+        - name: {{ .Values.volume.redis.volumeName}}
           hostPath:
-            path: "{{ .Values.volume.pgdata.volumePath }}/{{ .Values.volume.pgdata.volumeName}}-{{ .Release.Namespace }}"
-            type: {{ .Values.volume.pgdata.volumeType }}
+            path: "{{ .Values.volume.redis.volumePath }}/{{ .Values.volume.redis.volumeName}}-{{ .Release.Namespace }}"
+            type: {{ .Values.volume.redis.volumeType }}
       {{- end }}
       {{- if .Values.vault.enabled }}
         - name: secrets-store-inline

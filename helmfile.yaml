@@ -1,0 +1,21 @@
+helmDefaults:
+  waitForJobs: true
+
+releases:
+  - name: postgres
+    chart: postgres
+    values:
+      - values.yaml
+
+  - name: redis
+    chart: redis
+    values:
+      - values.yaml
+
+  - name: nginx
+    chart: nginx
+    values:
+      - values.yaml
+    needs:
+      - postgres
+      - redis

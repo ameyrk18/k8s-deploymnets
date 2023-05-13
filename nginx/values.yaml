@@ -1,14 +1,14 @@
-# Default values for postgres.
+# Default values for nginx.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
 
 image:
-  repository: postgres
+  repository: nginx
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "15.2"
+  tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -26,48 +26,48 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext: {}
-  #fsGroup: 1000
+  # fsGroup: 2000
 
 securityContext: {}
   # capabilities:
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
-  #runAsNonRoot: true
-  #runAsUser: 1000
+  # runAsNonRoot: true
+  # runAsUser: 1000
 
 service:
-  type: ClusterIP
-  port: 5432
+  type: LoadBalancer
+  http: 80
+  https: 443
 
 ingress:
   enabled: false
   className: ""
-  annotations:
-    {}
+  annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: chart-example.local
+    - host: localhost
       paths:
         - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+          pathType: Prefix
+  tls:
+    - secretName: web-tls
+      hosts:
+        - localhost
 
 resources:
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  limits:
-    cpu: 100m
-    memory: 128Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
+   requests:
+     cpu: 250m
+     memory: 256Mi
+   limits:
+     cpu: 250m
+     memory: 256Mi
 
 autoscaling:
   enabled: true
@@ -81,23 +81,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-pvcName: postgres-pvc
-pvcClassName: my-local-storage
-pvcSize: 5Gi
-
-pvc:
-  enabled: false
-  storageClassName: my-local-storage
-
-volume:
-  pgdata:
-    volumeName: pgdata
-    volumePath: /volumes
-    volumeType: DirectoryOrCreate
-    mountPath: /var/lib/postgressql/data
-    claimName: pgdata
-    size: 5Gi
-
-vault:
-  enabled : false
