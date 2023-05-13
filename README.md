@@ -84,3 +84,12 @@ The below requirements are listed for MacOS. Ideally it should also work for oth
 * Liveliness, readiness, and startup probes configured in all the `deployment.yaml`
 * Added label cache so that redis can use the affinity rule
 
+
+### Improvements/Bonus
+
+* Helm charts are created for webserver, redis and postgres
+* Prometheus metrics are exposed 
+* Conditional vault integration to manage secrets 
+* Conditional PVC  
+
+
